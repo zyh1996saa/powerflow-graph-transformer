@@ -236,18 +236,6 @@ The repository currently includes one training run under:
 logs/20260423_170301_pf_modular_gpt0421/
 ```
 
-The committed `final_test_metrics.json` reports:
-
-| Metric | Value |
-|---|---:|
-| Overall RMSE | 0.1976 |
-| Supervised MSE | 0.0394 |
-| Physics MSE | 0.0169 |
-| PQ RMSE | 0.3109 |
-| PV RMSE | 0.1056 |
-| Slack RMSE | 0.0944 |
-| P residual RMSE, p.u. | 0.1519 |
-| Q residual RMSE, p.u. | 0.1027 |
 
 These numbers are provided as a reproducibility reference for the current IEEE 39-bus prototype. They should not be interpreted as the full set of results reported in the manuscript.
 
@@ -311,14 +299,6 @@ Provides the staged training loop, including:
 
 If you use this repository, please cite the associated manuscript. Replace the placeholder metadata after formal publication.
 
-```bibtex
-@misc{zhu2026powerflowgt,
-  title  = {Power System Foundation Model with Variable-Topology Generalization and Cross-Task Transfer Capabilities},
-  author = {Zhu, Yuhong and Xia, Liangming and Zhou, Yongzhi and Li, Peng},
-  year   = {2026},
-  note   = {Manuscript}
-}
-```
 
 ## Acknowledgements
 
