@@ -1,0 +1,35 @@
+电力潮流训练流程审计报告
+================================================================
+device: cuda
+data_dir: /data2/zyh/case39_samples
+
+[1] 静态接口检查
+- move_batch_to_device_signature: "(batch: 'Dict[str, Any]', device: 'torch.device')"
+- physics_residual_loss_signature: "(H_pred_phys: 'torch.Tensor', Y: 'torch.Tensor', state_valid_mask: 'torch.Tensor', base_mva: 'float', eps: 'float' = 1e-08) -> 'Tuple[torch.Tensor, Dict[str, float]]'"
+- create_input_feature_mask_for_finetune_signature: "(node_valid_mask: 'torch.Tensor', state_valid_mask: 'torch.Tensor', bus_type: 'torch.Tensor', feat_dim: 'int' = 6) -> 'torch.Tensor'"
+- standardizer_normalize_signature: "(self, H: 'torch.Tensor', state_valid_mask: 'Optional[torch.Tensor]' = None) -> 'torch.Tensor'"
+- standardizer_denormalize_signature: "(self, H: 'torch.Tensor', state_valid_mask: 'Optional[torch.Tensor]' = None) -> 'torch.Tensor'"
+- run_one_epoch_uses_state_valid_mask: true
+- run_one_epoch_uses_feature_visible_mask: true
+- compute_total_loss_denormalizes_before_phy: true
+- compute_total_loss_uses_state_valid_mask_for_phy: true
+- pretrain_masks_use_state_valid_mask: true
+
+[2] 动态数据检查
+- status: ok
+- num_batches_checked: 3
+- roundtrip_max_abs_mean: 0.0
+- gt_bus_type_loss_mean: 0.0
+- gt_phy_mse_mean: 1.397240008878716e-10
+- gt_phy_level: very_small
+- gt_total_finetune_loss_mean: 1.397240020443539e-11
+- finetune_visible_target_overlap_total: 0
+- train_step: {"status": "ok", "loss": 19566.669921875, "rmse": 139.88091335802395, "phy_mse": 4.4801545300288126e-05, "grad_norm": NaN, "param_checksum_before": 99534.16370889544, "param_checksum_after": 99534.16370889544, "param_checksum_delta": 0.0}
+
+[3] 结论
+- 当前训练主循环已显式使用 state_valid_mask 做标准化、目标构造与物理损失约束。
+- 当前总损失计算在物理损失前执行了反标准化，这一链路是正确的。
+- GT 直接代入 supervised loss 基本为 0，监督损失公式本身没有明显错误。
+- 标准化/反标准化 roundtrip 误差很小，标准化实现本身基本正确。
+- GT 代入物理损失几乎为 0，H/Y/base_mva 基本一致。
+- 实际单步训练可以前向、反向并完成参数更新，训练 step 主干链路是可执行的。

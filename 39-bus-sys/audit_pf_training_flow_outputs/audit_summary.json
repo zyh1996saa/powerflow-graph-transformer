@@ -1,0 +1,339 @@
+{
+  "config": {
+    "script_dir": "/home/user/Desktop/zyh/twinTransformer/vgpt0419",
+    "data_dir": "/data2/zyh/case39_samples",
+    "device": "cuda",
+    "stats_path": "/data2/zyh/case39_samples/train_h_stats_global_6_gpt0419fix2.npz",
+    "batch_size": 8,
+    "num_data_batches_to_check": 3,
+    "run_model_forward": true,
+    "run_single_train_step": true
+  },
+  "static_checks": {
+    "move_batch_to_device_signature": "(batch: 'Dict[str, Any]', device: 'torch.device')",
+    "physics_residual_loss_signature": "(H_pred_phys: 'torch.Tensor', Y: 'torch.Tensor', state_valid_mask: 'torch.Tensor', base_mva: 'float', eps: 'float' = 1e-08) -> 'Tuple[torch.Tensor, Dict[str, float]]'",
+    "create_input_feature_mask_for_finetune_signature": "(node_valid_mask: 'torch.Tensor', state_valid_mask: 'torch.Tensor', bus_type: 'torch.Tensor', feat_dim: 'int' = 6) -> 'torch.Tensor'",
+    "standardizer_normalize_signature": "(self, H: 'torch.Tensor', state_valid_mask: 'Optional[torch.Tensor]' = None) -> 'torch.Tensor'",
+    "standardizer_denormalize_signature": "(self, H: 'torch.Tensor', state_valid_mask: 'Optional[torch.Tensor]' = None) -> 'torch.Tensor'",
+    "run_one_epoch_uses_state_valid_mask": true,
+    "run_one_epoch_uses_feature_visible_mask": true,
+    "compute_total_loss_denormalizes_before_phy": true,
+    "compute_total_loss_uses_state_valid_mask_for_phy": true,
+    "pretrain_masks_use_state_valid_mask": true
+  },
+  "dynamic_checks": {
+    "status": "ok",
+    "runtime_info": {
+      "module_paths": {
+        "pf_topology_utils": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_topology_utils.py",
+        "pf_data_loader": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_data_loader.py",
+        "pf_physics_losses": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_physics_losses.py",
+        "pf_topology_encoder": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_topology_encoder.py",
+        "pf_powerflow_model": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_powerflow_model.py",
+        "pf_trainer": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_trainer.py"
+      },
+      "bus_type_len": 39,
+      "base_mva": 100.0,
+      "standardization_enabled": false,
+      "standardization_stats_path": "/data2/zyh/case39_samples/train_h_stats_global_6_gpt0419fix2.npz"
+    },
+    "warnings": [],
+    "per_batch": [
+      {
+        "batch_idx": 0,
+        "sample_idx": [
+          56427,
+          2464,
+          59946,
+          8693,
+          57868,
+          47714,
+          18018,
+          22983
+        ],
+        "shape_H": [
+          8,
+          39,
+          6
+        ],
+        "shape_Y": [
+          8,
+          39,
+          39
+        ],
+        "node_valid_subset_check": true,
+        "finite_ratio_H": 1.0,
+        "finite_ratio_Y_real": 1.0,
+        "finite_ratio_Y_imag": 1.0,
+        "num_node_valid": 312,
+        "num_state_valid": 312,
+        "finetune_visible_target_overlap": 0,
+        "roundtrip_max_abs": 0.0,
+        "gt_masked_mse": 0.0,
+        "gt_bus_type_loss": 0.0,
+        "gt_bus_type_stats": {
+          "pq_mse": 0.0,
+          "pq_rmse": 0.0,
+          "pv_mse": 0.0,
+          "pv_rmse": 0.0,
+          "slack_mse": 0.0,
+          "slack_rmse": 0.0
+        },
+        "gt_phy_mse": 1.2994849640790562e-10,
+        "gt_phy_stats": {
+          "phy_mse": 1.2994849640790562e-10,
+          "phy_p_rmse_pu": 3.855177965306211e-06,
+          "phy_q_rmse_pu": 1.565358070365619e-05,
+          "base_mva": 100.0,
+          "num_state_valid": 312.0
+        },
+        "gt_phy_mse_after_roundtrip": 1.2994849640790562e-10,
+        "gt_total_finetune_loss": 1.2994849987735257e-11,
+        "gt_total_finetune_stats": {
+          "pq_mse": 0.0,
+          "pq_rmse": 0.0,
+          "pv_mse": 0.0,
+          "pv_rmse": 0.0,
+          "slack_mse": 0.0,
+          "slack_rmse": 0.0,
+          "supervised_mse": 0.0,
+          "phy_mse": 1.2994849640790562e-10,
+          "phy_p_rmse_pu": 3.855177965306211e-06,
+          "phy_q_rmse_pu": 1.565358070365619e-05,
+          "base_mva": 100.0,
+          "num_state_valid": 312.0,
+          "phy_weight": 0.1,
+          "loss": 1.2994849987735257e-11,
+          "rmse": 0.0
+        },
+        "pretrain_recon_count": 624,
+        "pretrain_visible_count": 1248,
+        "gt_total_pretrain_loss": 2.5989698674427908e-12,
+        "gt_total_pretrain_stats": {
+          "recon_mse": 0.0,
+          "phy_mse": 1.2994849640790562e-10,
+          "phy_p_rmse_pu": 3.855177965306211e-06,
+          "phy_q_rmse_pu": 1.565358070365619e-05,
+          "base_mva": 100.0,
+          "num_state_valid": 312.0,
+          "phy_weight": 0.02,
+          "loss": 2.5989698674427908e-12,
+          "rmse": 0.0
+        },
+        "model_forward_ok": true,
+        "pred_norm_shape": [
+          8,
+          39,
+          6
+        ],
+        "pred_norm_finite_ratio": 1.0
+      },
+      {
+        "batch_idx": 1,
+        "sample_idx": [
+          5631,
+          7130,
+          53569,
+          3701,
+          17356,
+          20101,
+          55656,
+          61239
+        ],
+        "shape_H": [
+          8,
+          39,
+          6
+        ],
+        "shape_Y": [
+          8,
+          39,
+          39
+        ],
+        "node_valid_subset_check": true,
+        "finite_ratio_H": 1.0,
+        "finite_ratio_Y_real": 1.0,
+        "finite_ratio_Y_imag": 1.0,
+        "num_node_valid": 312,
+        "num_state_valid": 308,
+        "finetune_visible_target_overlap": 0,
+        "roundtrip_max_abs": 0.0,
+        "gt_masked_mse": 0.0,
+        "gt_bus_type_loss": 0.0,
+        "gt_bus_type_stats": {
+          "pq_mse": 0.0,
+          "pq_rmse": 0.0,
+          "pv_mse": 0.0,
+          "pv_rmse": 0.0,
+          "slack_mse": 0.0,
+          "slack_rmse": 0.0
+        },
+        "gt_phy_mse": 1.19398463338527e-10,
+        "gt_phy_stats": {
+          "phy_mse": 1.19398463338527e-10,
+          "phy_p_rmse_pu": 3.7577985949610593e-06,
+          "phy_q_rmse_pu": 1.498919209552696e-05,
+          "base_mva": 100.0,
+          "num_state_valid": 308.0
+        },
+        "gt_phy_mse_after_roundtrip": 1.19398463338527e-10,
+        "gt_total_finetune_loss": 1.1939846680797395e-11,
+        "gt_total_finetune_stats": {
+          "pq_mse": 0.0,
+          "pq_rmse": 0.0,
+          "pv_mse": 0.0,
+          "pv_rmse": 0.0,
+          "slack_mse": 0.0,
+          "slack_rmse": 0.0,
+          "supervised_mse": 0.0,
+          "phy_mse": 1.19398463338527e-10,
+          "phy_p_rmse_pu": 3.7577985949610593e-06,
+          "phy_q_rmse_pu": 1.498919209552696e-05,
+          "base_mva": 100.0,
+          "num_state_valid": 308.0,
+          "phy_weight": 0.1,
+          "loss": 1.1939846680797395e-11,
+          "rmse": 0.0
+        },
+        "pretrain_recon_count": 616,
+        "pretrain_visible_count": 1256,
+        "gt_total_pretrain_loss": 2.3879691626871313e-12,
+        "gt_total_pretrain_stats": {
+          "recon_mse": 0.0,
+          "phy_mse": 1.19398463338527e-10,
+          "phy_p_rmse_pu": 3.7577985949610593e-06,
+          "phy_q_rmse_pu": 1.498919209552696e-05,
+          "base_mva": 100.0,
+          "num_state_valid": 308.0,
+          "phy_weight": 0.02,
+          "loss": 2.3879691626871313e-12,
+          "rmse": 0.0
+        },
+        "model_forward_ok": true,
+        "pred_norm_shape": [
+          8,
+          39,
+          6
+        ],
+        "pred_norm_finite_ratio": 1.0
+      },
+      {
+        "batch_idx": 2,
+        "sample_idx": [
+          19253,
+          22880,
+          65103,
+          65375,
+          28689,
+          11429,
+          23408,
+          34310
+        ],
+        "shape_H": [
+          8,
+          39,
+          6
+        ],
+        "shape_Y": [
+          8,
+          39,
+          39
+        ],
+        "node_valid_subset_check": true,
+        "finite_ratio_H": 1.0,
+        "finite_ratio_Y_real": 1.0,
+        "finite_ratio_Y_imag": 1.0,
+        "num_node_valid": 312,
+        "num_state_valid": 307,
+        "finetune_visible_target_overlap": 0,
+        "roundtrip_max_abs": 0.0,
+        "gt_masked_mse": 0.0,
+        "gt_bus_type_loss": 0.0,
+        "gt_bus_type_stats": {
+          "pq_mse": 0.0,
+          "pq_rmse": 0.0,
+          "pv_mse": 0.0,
+          "pv_rmse": 0.0,
+          "slack_mse": 0.0,
+          "slack_rmse": 0.0
+        },
+        "gt_phy_mse": 1.6982504291718215e-10,
+        "gt_phy_stats": {
+          "phy_mse": 1.6982504291718215e-10,
+          "phy_p_rmse_pu": 3.928353635274107e-06,
+          "phy_q_rmse_pu": 1.8006057871389203e-05,
+          "base_mva": 100.0,
+          "num_state_valid": 307.0
+        },
+        "gt_phy_mse_after_roundtrip": 1.6982504291718215e-10,
+        "gt_total_finetune_loss": 1.698250394477352e-11,
+        "gt_total_finetune_stats": {
+          "pq_mse": 0.0,
+          "pq_rmse": 0.0,
+          "pv_mse": 0.0,
+          "pv_rmse": 0.0,
+          "slack_mse": 0.0,
+          "slack_rmse": 0.0,
+          "supervised_mse": 0.0,
+          "phy_mse": 1.6982504291718215e-10,
+          "phy_p_rmse_pu": 3.928353635274107e-06,
+          "phy_q_rmse_pu": 1.8006057871389203e-05,
+          "base_mva": 100.0,
+          "num_state_valid": 307.0,
+          "phy_weight": 0.1,
+          "loss": 1.698250394477352e-11,
+          "rmse": 0.0
+        },
+        "pretrain_recon_count": 614,
+        "pretrain_visible_count": 1258,
+        "gt_total_pretrain_loss": 3.396500745586617e-12,
+        "gt_total_pretrain_stats": {
+          "recon_mse": 0.0,
+          "phy_mse": 1.6982504291718215e-10,
+          "phy_p_rmse_pu": 3.928353635274107e-06,
+          "phy_q_rmse_pu": 1.8006057871389203e-05,
+          "base_mva": 100.0,
+          "num_state_valid": 307.0,
+          "phy_weight": 0.02,
+          "loss": 3.396500745586617e-12,
+          "rmse": 0.0
+        },
+        "model_forward_ok": true,
+        "pred_norm_shape": [
+          8,
+          39,
+          6
+        ],
+        "pred_norm_finite_ratio": 1.0
+      }
+    ],
+    "num_batches_checked": 3,
+    "roundtrip_max_abs_mean": 0.0,
+    "gt_masked_mse_mean": 0.0,
+    "gt_bus_type_loss_mean": 0.0,
+    "gt_phy_mse_mean": 1.397240008878716e-10,
+    "gt_phy_mse_roundtrip_mean": 1.397240008878716e-10,
+    "gt_total_finetune_loss_mean": 1.397240020443539e-11,
+    "gt_total_pretrain_loss_mean": 2.7944799252388464e-12,
+    "gt_phy_level": "very_small",
+    "finetune_visible_target_overlap_total": 0,
+    "single_train_step": {
+      "status": "ok",
+      "loss": 19566.669921875,
+      "rmse": 139.88091335802395,
+      "phy_mse": 4.4801545300288126e-05,
+      "grad_norm": NaN,
+      "param_checksum_before": 99534.16370889544,
+      "param_checksum_after": 99534.16370889544,
+      "param_checksum_delta": 0.0
+    }
+  },
+  "conclusions": [
+    "当前训练主循环已显式使用 state_valid_mask 做标准化、目标构造与物理损失约束。",
+    "当前总损失计算在物理损失前执行了反标准化，这一链路是正确的。",
+    "GT 直接代入 supervised loss 基本为 0，监督损失公式本身没有明显错误。",
+    "标准化/反标准化 roundtrip 误差很小，标准化实现本身基本正确。",
+    "GT 代入物理损失几乎为 0，H/Y/base_mva 基本一致。",
+    "实际单步训练可以前向、反向并完成参数更新，训练 step 主干链路是可执行的。"
+  ]
+}

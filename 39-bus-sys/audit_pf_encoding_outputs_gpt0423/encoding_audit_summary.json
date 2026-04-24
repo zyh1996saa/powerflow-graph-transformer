@@ -1,0 +1,314 @@
+{
+  "config": {
+    "device": "cuda",
+    "data_dir": "/data2/zyh/case39_samples",
+    "stats_path": "/data2/zyh/case39_samples/train_h_stats_global_6_gpt0421_modular.npz",
+    "ckpt_path": null,
+    "batch_size": 8,
+    "num_batches_to_check": 2
+  },
+  "static_report": {
+    "module_paths": {
+      "pf_topology_utils": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_topology_utils.py",
+      "pf_data_loader": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_data_loader.py",
+      "pf_physics_losses": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_physics_losses.py",
+      "pf_topology_encoder": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_topology_encoder.py",
+      "pf_powerflow_model": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_powerflow_model.py",
+      "pf_trainer": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/pf_trainer.py"
+    },
+    "train_script": {
+      "train_script_path": "/home/user/Desktop/zyh/twinTransformer/vgpt0419/train_powerflow_modular.py",
+      "imports_vgpt0419_namespace": true,
+      "uses_standardization": true,
+      "uses_zero_target_fields_in_input": true,
+      "uses_structured_pretrain_mask": true,
+      "uses_bus_type_aware_loss": true,
+      "uses_dynamic_depth_sampling": true
+    },
+    "judgements": {
+      "node_encoding": {
+        "level": "warning",
+        "summary": "节点编码包含数值投影、母线类型嵌入、可学习节点位置嵌入和缺失特征掩码嵌入；其中节点位置编码本质上是按排序位置索引的 ID embedding。",
+        "evidence": [
+          "value_proj=True",
+          "bus_type_embed=True",
+          "node_pos_embed=True",
+          "feature_mask_embed=True",
+          "explicit_feature_type_embed=False",
+          "position_from_arange=True"
+        ],
+        "advice": "保留母线类型嵌入，但建议弱化或替换纯 ID 式 node_pos_embed；更适合变拓扑场景的是相对结构编码、拉普拉斯/随机游走编码、基于电气距离的编码，或至少把 node_pos_embed 仅作为可关闭的辅助项做消融。"
+      },
+      "edge_encoding": {
+        "level": "warning",
+        "summary": "支路编码由 edge_feat 数值投影、支路类型嵌入、支路状态嵌入，以及两端节点位置编码之和组成，并进一步投影成 attention bias。",
+        "evidence": [
+          "branch_type_embed=True",
+          "branch_status_embed=True",
+          "endpoint_pos_encoding=True",
+          "attn_bias_proj=True"
+        ],
+        "advice": "这一路设计方向是对的，但端点位置编码仍继承了节点 ID embedding 的问题；建议增补不依赖绝对节点序的相对结构特征，例如 hop distance、电气距离、共享支路类别、或从 Y 派生的归一化阻抗/耦合强度编码。"
+      },
+      "dynamic_topology_handling": {
+        "level": "warning",
+        "summary": "当前拓扑处理是“静态候选边 + 动态开断状态”范式：候选连边来自 network_metadata，实际是否闭合由当前样本 Y 的非零强度决定。",
+        "evidence": [
+          "static_candidate_mask=True",
+          "dynamic_closed_mask_from_Y=True"
+        ],
+        "advice": "这能处理既有线路的开断/投运变化，但不能表达 metadata 中不存在的新边；若后续要支持更一般的开关重构、母联合环或设备新增，候选边集合不能只由静态 catalog 决定。"
+      },
+      "physical_quantity_encoding": {
+        "level": "warning",
+        "summary": "节点物理量采用固定 6 维排列 [Pd, Qd, Pg, Qg, Vm, Va]，然后整体线性投影到 d_model；当前并没有显式的“物理量类型 embedding”。",
+        "evidence": [
+          "feature_names_declared=True",
+          "single_linear_projection_only=True"
+        ],
+        "advice": "单纯线性投影并非错误，但它把各物理量语义完全交给投影矩阵列权重去吸收，可解释性和迁移性都偏弱。建议尝试：(1) 对 Pd/Qd/Pg/Qg/Vm/Va 增加 feature-type embedding；(2) 对角度采用 sin/cos 双通道替代裸 Va；(3) 对注入类与状态类特征分组归一化或分支编码。"
+      },
+      "masking_and_training_alignment": {
+        "level": "good",
+        "summary": "训练流已把 node_valid_mask 与 state_valid_mask 区分开，并在 finetune 输入掩码、预训练结构掩码、监督损失和物理损失中统一使用 state_valid_mask。",
+        "evidence": [
+          "loader_infers_state_valid_mask=True",
+          "trainer_uses_state_valid_mask=True",
+          "finetune_zero_targets_in_input=True",
+          "structured_pretrain_mask=True"
+        ],
+        "advice": "这一部分基本正确。需要注意的是，若 metadata 里没有可靠的 state_valid_mask，当前用 Vm/Va 是否有限且 Vm 非零来回退推断，可能把某些异常工况误判为无效节点。"
+      },
+      "standardization": {
+        "level": "good",
+        "summary": "标准化采用基于训练集、仅统计 state_valid 节点的全局逐特征 mean/std，并在 normalize/denormalize 后把无效节点位置重置为 0。",
+        "evidence": [
+          "state_valid_only_stats=True",
+          "normalize_zero_invalid=True",
+          "denormalize_zero_invalid=True"
+        ],
+        "advice": "这比把 padding/孤岛节点直接混入统计更稳妥。若后续跨系统训练，建议把全局逐特征统计改成更稳健的分位数裁剪或按系统/电压等级分桶统计。"
+      }
+    }
+  },
+  "dynamic_report": {
+    "status": "ok",
+    "warnings": [
+      "标准化/反标准化 roundtrip 误差偏大: 1.221e-04",
+      "未加载训练后 checkpoint，因此编码消融敏感性不能用于判断已训练模型的真实依赖程度"
+    ],
+    "per_batch": [
+      {
+        "batch_idx": 0,
+        "sample_idx": [
+          56427,
+          2464,
+          59946,
+          8693,
+          57868,
+          47714,
+          18018,
+          22983
+        ],
+        "shape_H": [
+          8,
+          39,
+          6
+        ],
+        "shape_Y": [
+          8,
+          39,
+          39
+        ],
+        "num_state_valid": 312,
+        "finetune_visible_target_overlap": 0,
+        "roundtrip_max_abs": 0.0001220703125,
+        "pred_finite_ratio": 1.0,
+        "candidate_edge_ratio": 0.04602235555648804,
+        "closed_edge_ratio": 0.04388560354709625,
+        "gt_phy_mse": 1.2994849640790562e-10
+      },
+      {
+        "batch_idx": 1,
+        "sample_idx": [
+          5631,
+          7130,
+          53569,
+          3701,
+          17356,
+          20101,
+          55656,
+          61239
+        ],
+        "shape_H": [
+          8,
+          39,
+          6
+        ],
+        "shape_Y": [
+          8,
+          39,
+          39
+        ],
+        "num_state_valid": 308,
+        "finetune_visible_target_overlap": 0,
+        "roundtrip_max_abs": 0.0001220703125,
+        "pred_finite_ratio": 1.0,
+        "candidate_edge_ratio": 0.04602235555648804,
+        "closed_edge_ratio": 0.043721236288547516,
+        "gt_phy_mse": 1.19398463338527e-10
+      }
+    ],
+    "checkpoint_load": {
+      "status": "skipped",
+      "reason": "CKPT_PATH is None"
+    },
+    "num_batches_checked": 2,
+    "roundtrip_max_abs_mean": 0.0001220703125,
+    "candidate_edge_ratio_mean": 0.04602235555648804,
+    "closed_edge_ratio_mean": 0.043803419917821884,
+    "gt_phy_mse_mean": 1.246734798732163e-10,
+    "finetune_visible_target_overlap_total": 0,
+    "feature_stats_raw": [
+      {
+        "Pd": {
+          "mean": 166.2261962890625,
+          "std": 263.3168029785156,
+          "abs_mean": 166.2261962890625
+        },
+        "Qd": {
+          "mean": 36.595191955566406,
+          "std": 71.95907592773438,
+          "abs_mean": 44.523712158203125
+        },
+        "Pg": {
+          "mean": 168.39479064941406,
+          "std": 324.17584228515625,
+          "abs_mean": 168.39479064941406
+        },
+        "Qg": {
+          "mean": 48.832008361816406,
+          "std": 98.36186218261719,
+          "abs_mean": 48.874698638916016
+        },
+        "Vm": {
+          "mean": 1.0134539604187012,
+          "std": 0.029607979580760002,
+          "abs_mean": 1.0134539604187012
+        },
+        "Va": {
+          "mean": 11.292340278625488,
+          "std": 12.556693077087402,
+          "abs_mean": 12.33064079284668
+        }
+      },
+      {
+        "Pd": {
+          "mean": 164.9798126220703,
+          "std": 257.0515441894531,
+          "abs_mean": 164.9798126220703
+        },
+        "Qd": {
+          "mean": 37.038726806640625,
+          "std": 74.3775634765625,
+          "abs_mean": 45.76398849487305
+        },
+        "Pg": {
+          "mean": 166.96817016601562,
+          "std": 320.672119140625,
+          "abs_mean": 166.96817016601562
+        },
+        "Qg": {
+          "mean": 46.41834259033203,
+          "std": 90.78096771240234,
+          "abs_mean": 46.54509353637695
+        },
+        "Vm": {
+          "mean": 1.0155178308486938,
+          "std": 0.025388414040207863,
+          "abs_mean": 1.0155178308486938
+        },
+        "Va": {
+          "mean": 6.30568265914917,
+          "std": 12.147420883178711,
+          "abs_mean": 10.653975486755371
+        }
+      }
+    ],
+    "feature_stats_norm": [
+      {
+        "Pd": {
+          "mean": 0.024027667939662933,
+          "std": 1.071163296699524,
+          "abs_mean": 0.748720109462738
+        },
+        "Qd": {
+          "mean": 0.01300826109945774,
+          "std": 1.0221409797668457,
+          "abs_mean": 0.7302743196487427
+        },
+        "Pg": {
+          "mean": 0.019311722368001938,
+          "std": 1.0378432273864746,
+          "abs_mean": 0.8051204681396484
+        },
+        "Qg": {
+          "mean": 0.036712564527988434,
+          "std": 1.047989010810852,
+          "abs_mean": 0.7696470022201538
+        },
+        "Vm": {
+          "mean": -0.048973724246025085,
+          "std": 1.0263700485229492,
+          "abs_mean": 0.834683358669281
+        },
+        "Va": {
+          "mean": 0.34757229685783386,
+          "std": 0.9743521809577942,
+          "abs_mean": 0.786712646484375
+        }
+      },
+      {
+        "Pd": {
+          "mean": 0.018957385793328285,
+          "std": 1.045676350593567,
+          "abs_mean": 0.7408921718597412
+        },
+        "Qd": {
+          "mean": 0.019308501854538918,
+          "std": 1.0564942359924316,
+          "abs_mean": 0.7513864636421204
+        },
+        "Pg": {
+          "mean": 0.014744468964636326,
+          "std": 1.0266259908676147,
+          "abs_mean": 0.8031338453292847
+        },
+        "Qg": {
+          "mean": 0.010996325872838497,
+          "std": 0.9672189354896545,
+          "abs_mean": 0.7431853413581848
+        },
+        "Vm": {
+          "mean": 0.022570395842194557,
+          "std": 0.8800975680351257,
+          "abs_mean": 0.7531136870384216
+        },
+        "Va": {
+          "mean": -0.03937363252043724,
+          "std": 0.9425941705703735,
+          "abs_mean": 0.7407448291778564
+        }
+      }
+    ]
+  },
+  "conclusions": [
+    "当前训练流程在 mask、监督目标、物理损失与标准化的对齐上基本正确，主问题不在这些基础接口。",
+    "最值得优先重构的是节点/支路位置编码：当前 node_pos_embed 与 endpoint_pos_encoding 都强烈依赖固定母线排序，更像 ID 记忆而不是拓扑结构编码。",
+    "当前所谓动态拓扑，实质是“静态候选边 + 动态边状态”；它能处理既有线路开断，但不适合更一般的新连边拓扑。",
+    "节点物理量目前只有整体线性投影，没有显式 feature-type encoding，建议把 Pd/Qd/Pg/Qg/Vm/Va 的类型信息显式注入。",
+    "若你当前模型拟合效果不好，我建议先做三组最小消融：去掉 node_pos_embed、加入 feature-type embedding、把 Va 改成 sin/cos 双通道。",
+    "动态检查显示 finetune 输入掩码与监督目标无重叠，这一点是干净的。",
+    "样本中平均闭合边密度约为 0.0438，说明模型确实在读取样本级 Y 来感知边状态。"
+  ]
+}

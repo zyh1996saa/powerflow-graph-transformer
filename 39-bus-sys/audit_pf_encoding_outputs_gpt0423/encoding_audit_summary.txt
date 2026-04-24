@@ -1,0 +1,62 @@
+电力潮流 Graph Transformer 编码策略审计报告
+========================================================================
+device: cuda
+data_dir: /data2/zyh/case39_samples
+ckpt_path: None
+
+[1] 静态编码判断
+- node_encoding [warning]: 节点编码包含数值投影、母线类型嵌入、可学习节点位置嵌入和缺失特征掩码嵌入；其中节点位置编码本质上是按排序位置索引的 ID embedding。
+    * value_proj=True
+    * bus_type_embed=True
+    * node_pos_embed=True
+    * feature_mask_embed=True
+    * explicit_feature_type_embed=False
+    * position_from_arange=True
+    建议: 保留母线类型嵌入，但建议弱化或替换纯 ID 式 node_pos_embed；更适合变拓扑场景的是相对结构编码、拉普拉斯/随机游走编码、基于电气距离的编码，或至少把 node_pos_embed 仅作为可关闭的辅助项做消融。
+- edge_encoding [warning]: 支路编码由 edge_feat 数值投影、支路类型嵌入、支路状态嵌入，以及两端节点位置编码之和组成，并进一步投影成 attention bias。
+    * branch_type_embed=True
+    * branch_status_embed=True
+    * endpoint_pos_encoding=True
+    * attn_bias_proj=True
+    建议: 这一路设计方向是对的，但端点位置编码仍继承了节点 ID embedding 的问题；建议增补不依赖绝对节点序的相对结构特征，例如 hop distance、电气距离、共享支路类别、或从 Y 派生的归一化阻抗/耦合强度编码。
+- dynamic_topology_handling [warning]: 当前拓扑处理是“静态候选边 + 动态开断状态”范式：候选连边来自 network_metadata，实际是否闭合由当前样本 Y 的非零强度决定。
+    * static_candidate_mask=True
+    * dynamic_closed_mask_from_Y=True
+    建议: 这能处理既有线路的开断/投运变化，但不能表达 metadata 中不存在的新边；若后续要支持更一般的开关重构、母联合环或设备新增，候选边集合不能只由静态 catalog 决定。
+- physical_quantity_encoding [warning]: 节点物理量采用固定 6 维排列 [Pd, Qd, Pg, Qg, Vm, Va]，然后整体线性投影到 d_model；当前并没有显式的“物理量类型 embedding”。
+    * feature_names_declared=True
+    * single_linear_projection_only=True
+    建议: 单纯线性投影并非错误，但它把各物理量语义完全交给投影矩阵列权重去吸收，可解释性和迁移性都偏弱。建议尝试：(1) 对 Pd/Qd/Pg/Qg/Vm/Va 增加 feature-type embedding；(2) 对角度采用 sin/cos 双通道替代裸 Va；(3) 对注入类与状态类特征分组归一化或分支编码。
+- masking_and_training_alignment [good]: 训练流已把 node_valid_mask 与 state_valid_mask 区分开，并在 finetune 输入掩码、预训练结构掩码、监督损失和物理损失中统一使用 state_valid_mask。
+    * loader_infers_state_valid_mask=True
+    * trainer_uses_state_valid_mask=True
+    * finetune_zero_targets_in_input=True
+    * structured_pretrain_mask=True
+    建议: 这一部分基本正确。需要注意的是，若 metadata 里没有可靠的 state_valid_mask，当前用 Vm/Va 是否有限且 Vm 非零来回退推断，可能把某些异常工况误判为无效节点。
+- standardization [good]: 标准化采用基于训练集、仅统计 state_valid 节点的全局逐特征 mean/std，并在 normalize/denormalize 后把无效节点位置重置为 0。
+    * state_valid_only_stats=True
+    * normalize_zero_invalid=True
+    * denormalize_zero_invalid=True
+    建议: 这比把 padding/孤岛节点直接混入统计更稳妥。若后续跨系统训练，建议把全局逐特征统计改成更稳健的分位数裁剪或按系统/电压等级分桶统计。
+
+[2] 动态检查
+- status: ok
+- num_batches_checked: 2
+- roundtrip_max_abs_mean: 0.0001220703125
+- candidate_edge_ratio_mean: 0.04602235555648804
+- closed_edge_ratio_mean: 0.043803419917821884
+- gt_phy_mse_mean: 1.246734798732163e-10
+- finetune_visible_target_overlap_total: 0
+- checkpoint_load: {"status": "skipped", "reason": "CKPT_PATH is None"}
+- warnings:
+    * 标准化/反标准化 roundtrip 误差偏大: 1.221e-04
+    * 未加载训练后 checkpoint，因此编码消融敏感性不能用于判断已训练模型的真实依赖程度
+
+[3] 结论
+- 当前训练流程在 mask、监督目标、物理损失与标准化的对齐上基本正确，主问题不在这些基础接口。
+- 最值得优先重构的是节点/支路位置编码：当前 node_pos_embed 与 endpoint_pos_encoding 都强烈依赖固定母线排序，更像 ID 记忆而不是拓扑结构编码。
+- 当前所谓动态拓扑，实质是“静态候选边 + 动态边状态”；它能处理既有线路开断，但不适合更一般的新连边拓扑。
+- 节点物理量目前只有整体线性投影，没有显式 feature-type encoding，建议把 Pd/Qd/Pg/Qg/Vm/Va 的类型信息显式注入。
+- 若你当前模型拟合效果不好，我建议先做三组最小消融：去掉 node_pos_embed、加入 feature-type embedding、把 Va 改成 sin/cos 双通道。
+- 动态检查显示 finetune 输入掩码与监督目标无重叠，这一点是干净的。
+- 样本中平均闭合边密度约为 0.0438，说明模型确实在读取样本级 Y 来感知边状态。
