@@ -1,0 +1,54 @@
+{
+  "checkpoint_path": "logs/20260507_165445_pf_dc_delta/ckpt_delta_last.pt",
+  "data_dir": "/data2/zyh/case39_samples_dc_delta",
+  "output_dir": "pf_eval_outputs_dc_delta_full_physics",
+  "base_mva": 100.0,
+  "selected_train_ids": [
+    5842,
+    28420,
+    28806,
+    42948,
+    50790
+  ],
+  "selected_test_ids": [
+    65718,
+    66422,
+    66434,
+    66875,
+    67118
+  ],
+  "comparisons": [
+    [
+      "model_vs_ac",
+      "model",
+      "ac"
+    ],
+    [
+      "dc_vs_ac",
+      "dc",
+      "ac"
+    ],
+    [
+      "model_vs_dc",
+      "model",
+      "dc"
+    ]
+  ],
+  "evaluate_node_h_features": true,
+  "evaluated_h_feature_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "evaluate_h_features_bus_type_target_only": false,
+  "evaluate_node_spec_injection": true,
+  "evaluate_node_calc_injection": true,
+  "evaluate_branch_flow": true,
+  "branch_flow_formula": "y_ij=-Ybus[i,j]; I_ij=(V_i-V_j)*y_ij; S_ij=V_i*conj(I_ij)*base_mva",
+  "branch_y_abs_eps": 1e-10,
+  "percent_denom_eps": 1e-08,
+  "formulation": "H_pred = H_dc + denormalized_delta_pred on bus-type target columns"
+}
