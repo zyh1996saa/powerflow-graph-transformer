@@ -436,18 +436,7 @@ This repository should be interpreted as research code. The following limitation
 
 ---
 
-## Citation
 
-If this repository supports an academic publication, please cite the associated manuscript. Replace the placeholder below with the final bibliographic information after publication.
-
-```bibtex
-@misc{powerflow_graph_transformer,
-  title  = {PowerFlow Graph Transformer: Topology-Aware Neural Power-Flow Learning under Variable Grid Topology},
-  author = {Author information to be added},
-  year   = {2026},
-  note   = {Research code for IEEE 39-bus topology-aware power-flow learning}
-}
-```
 
 ---
 
